@@ -1,9 +1,14 @@
 from app import app, lm
-from flask import request, redirect, render_template, url_for, flash
-from flask.ext.login import login_user, logout_user, login_required
+from flask import request, redirect, render_template, url_for, flash, jsonify
+from flask.ext.login import login_user, logout_user, login_required, current_user
 from .forms import LoginForm
 from .user import User
 from werkzeug.security import generate_password_hash
+import json
+from bson import ObjectId
+import calendar
+from collections import OrderedDict
+
 
 @app.route('/')
 @login_required
@@ -21,7 +26,7 @@ def login():
             user_obj = User(user['username'])
             login_user(user_obj)
             flash("Logged in successfully!", category='success')
-            return redirect(request.args.get("next") or url_for("home"))
+            return redirect(url_for("home"))
         flash("Wrong username or password!", category='error')
     return render_template('login.html', title='login', form=form)
 
@@ -53,13 +58,83 @@ def logout():
 def chat():
     return render_template('chat.html')
 
-
 @app.route('/schedules', methods=['GET', 'POST'])
 @login_required
 def schedules():
-    return render_template('schedules.html')
+    result = OrderedDict()
+    collection = app.config['EVENT_COLLECTION']
+    days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+    months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"]
+    cursor = collection.find({"user" : current_user.get_id()}).sort("isoDate" , 1)
+    listOfObjects = list(cursor)
+    for i in listOfObjects:
+        i['_id'] = str(i['_id'])
+        dateArray = i['date'].split("/")
+        dayValue = calendar.weekday(int(dateArray[2]), int(dateArray[0]), int(dateArray[1]))
+        i["day"] = days[dayValue]
+        monthValue = int(dateArray[0]) - 1
+        i["month"] = months[monthValue]
+        i["year"] = dateArray[2]
+        if i['date'] in result.keys():
+            result[i['date']].append(i)
+        else:
+            result[i['date']] = list()
+            result[i['date']].append(i)
+    return render_template('schedules.html', data = result)
+
+@app.route('/addSchedule', methods=['GET', 'POST'])
+@login_required
+def addSchedule():
+    return render_template('add_schedule.html')
+
+@app.route('/addEvent', methods=['POST'])
+@login_required
+def addEvent():
+    jsonValue = request.get_json()
+    collection = app.config['EVENT_COLLECTION']
+    eventName = jsonValue.get('eventName')
+    date = jsonValue.get('date')
+    isoDate = jsonValue.get('isoDate')
+    time1 = jsonValue.get('time1')
+    time2 = jsonValue.get('time2')
+    collection.insert({"event": eventName, "date" : date, "isoDate" : isoDate, "user" : current_user.get_id(), "time1" : time1, "time2" : time2})
+    flash("Event added!", category='success')
+    return redirect(url_for('addSchedule'))
+
+@app.route('/deleteEvent', methods=['POST'])
+@login_required
+def deleteEvent():
+    jsonValue = request.get_json()
+    collection = app.config['EVENT_COLLECTION']
+    for id in jsonValue.get("objectIds"):
+        oid = ObjectId(id)
+        collection.remove({"_id" : oid})
+    return redirect(url_for('schedules'))
 
 
+@app.route('/getEvents', methods=['GET'])
+@login_required
+def getEvents():
+    collection = app.config['EVENT_COLLECTION']
+    days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+    months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"]
+    cursor = collection.find({"user" : current_user.get_id()}).sort("isoDate" , 1)
+    result = {}
+    listOfObjects = list(cursor)
+    for i in listOfObjects:
+        i['_id'] = str(i['_id'])
+        dateArray = i['date'].split("/")
+        dayValue = calendar.weekday(int(dateArray[2]), int(dateArray[0]), int(dateArray[1]))
+        i["day"] = days[dayValue]
+        monthValue = int(dateArray[0]) - 1
+        i["month"] = months[monthValue]
+        i["year"] = dateArray[2]
+        if i['date'] in result.keys():
+            result[i['date']].append(i)
+        else:
+            result[i['date']] = list()
+            result[i['date']].append(i)
+    return jsonify(result)
 
 @lm.user_loader
 def load_user(username):
@@ -67,3 +142,4 @@ def load_user(username):
     if not u:
         return None
     return User(u['username'])
+

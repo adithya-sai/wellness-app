@@ -6,5 +6,6 @@ DB_NAME = 'assistiveDB'
 
 DATABASE = MongoClient()[DB_NAME]
 USERS_COLLECTION = DATABASE.users
+EVENT_COLLECTION = DATABASE.events
 
 DEBUG = True
