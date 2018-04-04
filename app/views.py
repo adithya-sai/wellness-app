@@ -136,6 +136,28 @@ def getEvents():
             result[i['date']].append(i)
     return jsonify(result)
 
+@app.route('/exercises', methods=['GET', 'POST'])
+@login_required
+def exercises():
+    collection = app.config['EXERCISE_COLLECTION']
+    cursor = collection.find({"user" : current_user.get_id()}).sort("date" , 1)
+    result = []
+    for i in list(cursor):
+        result.append([i['date'], 1])
+    print result
+    return render_template('exercises.html', data = json.dumps(result))
+
+@app.route('/addExercise', methods=['POST'])
+@login_required
+def addExercise():
+    jsonValue = request.get_json()
+    collection = app.config['EXERCISE_COLLECTION']
+    exercisetype = jsonValue.get('exercisetype')
+    date = jsonValue.get('date')
+    collection.insert({"exercise": exercisetype, "date" : date, "user" : current_user.get_id()})
+    flash("Exercise added!", category='success')
+    return "success"
+
 @lm.user_loader
 def load_user(username):
     u = app.config['USERS_COLLECTION'].find_one({"username": username})
