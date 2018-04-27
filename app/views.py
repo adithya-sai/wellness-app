@@ -107,8 +107,16 @@ def help():
 @app.route('/addContact', methods = ['GET', 'POST'])
 @login_required
 def addContact():
-    flash("Feedback submitted!", category='success')
-    return render_template('contact.html')
+    if request.method == 'POST':
+        jsonValue = request.get_json()
+        collection = app.config['FEEDBACK_COLLECTION']
+        fname = jsonValue.get('fname')
+        lname = jsonValue.get('lname')
+        email = jsonValue.get('email')
+        subject = jsonValue.get('subject')
+        collection.insert({"fname": fname, "lname": lname, "email": email, "subject": subject})
+        flash("Feedback submitted!", category='success')
+        return "success"
 
 
 @app.route('/addEvent', methods=['POST'])
@@ -123,7 +131,7 @@ def addEvent():
     time2 = jsonValue.get('time2')
     collection.insert({"event": eventName, "date" : date, "isoDate" : isoDate, "user" : current_user.get_id(), "time1" : time1, "time2" : time2})
     flash("Event added!", category='success')
-    return redirect(url_for('addSchedule'))
+    return "success"
 
 @app.route('/deleteEvent', methods=['POST'])
 @login_required
@@ -181,6 +189,8 @@ def addExercise():
     collection.insert({"exercise": exercisetype, "date" : date, "user" : current_user.get_id()})
     flash("Exercise added!", category='success')
     return "success"
+
+
 
 @lm.user_loader
 def load_user(username):

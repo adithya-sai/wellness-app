@@ -43,15 +43,46 @@ input[type=submit]:hover {
     <label for="lname">Last Name</label>
     <input type="text" id="lname" name="lastname" placeholder="Your last name..">
     <label for="lname">Email</label>
-    <input type="text" id="lname" name="lastname" placeholder="Your email..">
+    <input type="text" id="email" name="lastname" placeholder="Your email..">
 
 
     <label for="subject">Feedback</label>
     <textarea id="subject" name="subject" placeholder="Write something.." style="height:140px"></textarea>
 
-    <input type="submit" value="Submit">
+    <a class="btn btn-primary" onclick="addFeedback()" role="button">Submit</a>
   </form>
 </div>
 
 </body>
+
+
+
+    <script type="text/javascript">
+
+        function addFeedback() {
+            var json = new Object()
+            if($("#fname").val())
+                json.fname = $("#fname").val();
+            if($("#lname").val())
+                json.lname = $("#lname").val();
+            if($("#email").val())
+                json.email = $("#email").val();
+            if($("#subject").val())
+                json.subject = $("#subject").val();
+
+            if(json.fname && json.lname && json.email && json.subject) {
+                $.ajax ({
+                    url: "/addContact",
+                    type: "POST",
+                    data: JSON.stringify(json),
+                    contentType: "application/json; charset=utf-8",
+                    success: function(){
+                     window.location = "/contactus";
+                    }
+
+                });
+            }
+        }
+    </script>
+
 {% endblock %}
