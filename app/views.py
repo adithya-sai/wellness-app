@@ -58,6 +58,13 @@ def logout():
 def chat():
     return render_template('chat.html')
 
+@app.route('/music', methods=['GET', 'POST'])
+@login_required
+def music():
+    return render_template('music.html')
+
+
+
 @app.route('/schedules', methods=['GET', 'POST'])
 @login_required
 def schedules():
@@ -86,6 +93,23 @@ def schedules():
 @login_required
 def addSchedule():
     return render_template('add_schedule.html')
+
+@app.route('/contactus', methods = ['GET', 'POST'])
+@login_required
+def contact():
+    return render_template('contact.html')
+
+@app.route('/help', methods = ['GET', 'POST'])
+@login_required
+def help():
+    return render_template('help.html')
+
+@app.route('/addContact', methods = ['GET', 'POST'])
+@login_required
+def addContact():
+    flash("Feedback submitted!", category='success')
+    return render_template('contact.html')
+
 
 @app.route('/addEvent', methods=['POST'])
 @login_required
